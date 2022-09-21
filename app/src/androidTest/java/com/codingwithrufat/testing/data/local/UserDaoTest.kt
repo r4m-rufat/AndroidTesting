@@ -4,6 +4,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import app.cash.turbine.test
+import com.codingwithrufat.testing.TestDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
@@ -20,6 +22,9 @@ import kotlin.jvm.Throws
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class UserDaoTest {
+
+    @get:Rule
+    val testDispatcherRule = TestDispatcherRule()
 
     private lateinit var database: UserDatabase
     private lateinit var dao: UserDao
@@ -44,13 +49,15 @@ class UserDaoTest {
 
     @Test
     @Throws(Exception::class)
-    fun insertUser() = runBlocking {
+    fun insertUser() = runTest {
 
         val user = UserEntity(1, "Rufat", "Nasirov")
         dao.insertUser(user)
 
-        dao.getAllUsers().collect{
-            assertTrue(it.contains(user))
+        dao.getAllUsers().test {
+            val users = awaitItem()
+            assertTrue(users.contains(user))
+            cancel()
         }
 
     }
